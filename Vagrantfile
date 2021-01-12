@@ -5,8 +5,6 @@ $install_ansible = <<-SCRIPT
     apt-get install -y ansible
 SCRIPT
 
-
-
 Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu/bionic64"
     
@@ -37,6 +35,13 @@ Vagrant.configure("2") do |config|
 
     config.vm.define "mysqlserver" do |mysqlserver|
         mysqlserver.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.154"
+        
+        mysqlserver.vm.provider "virtualbox" do |vb|
+            vb.name = "ubuntu_bionic_mysqlserver"
+            vb.memory = 1024
+            vb.cpus = 2
+        end
+
         mysqlserver.vm.provision "shell", 
             inline: "cat /vagrant/configs/id_bionic.pub >> .ssh/authorized_keys"
     end
@@ -44,6 +49,13 @@ Vagrant.configure("2") do |config|
     # optional - provision a vm for ansible playbook scripting
     config.vm.define "ansible" do |ansible|
         ansible.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.155"
+        
+        ansible.vm.provider "virtualbox" do |vb|
+            vb.name = "ubuntu_bionic_ansible"
+            vb.memory = 512
+            vb.cpus = 1
+        end
+
         ansible.vm.provision "shell",
             inline: $install_ansible
         ansible.vm.provision "shell",
@@ -55,14 +67,28 @@ Vagrant.configure("2") do |config|
             /vagrant/configs/ansible/playbook.yml"
     end
 
-    config.vm.define "memcache" do |memcache|
-        memcache.vm.box = "centos/7"
+    # optional - provide memcache
+    # config.vm.define "memcache" do |memcache|
+    #     memcache.vm.box = "centos/7"
 
-        memcache.vm.provider "virtualbox" do |vb|
-            vb.name = "centos7_memcache"
-            vb.memory = 512
-            vb.cpus = 1
-        end
-    end
+    #     memcache.vm.provider "virtualbox" do |vb|
+    #         vb.name = "centos7_memcache"
+    #         vb.memory = 512
+    #         vb.cpus = 1
+    #     end
+    # end
 
+    # optional - create docker host engine
+    # config.vm.define "dockerhost" do |dockerhost|
+    #     dockerhost.vm.provider "virtualbox" do |vb|
+    #         vb.name = "ubuntu_dockerhost"
+    #         vb.memory = 512
+    #         vb.cpus = 1
+    #     end
+    
+    #     dockerhost.vm.provision "shell",
+    #         inline: "apt-get update && \
+    #         apt-get install -y docker.io"
+    #     end
+    # end
 end
