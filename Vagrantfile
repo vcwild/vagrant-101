@@ -16,22 +16,6 @@ SCRIPT
 Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu/bionic64"
 
-    config.vm.define "mysqldb" do |mysql|
-        mysql.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.152"
-
-        mysql.vm.provision "shell", 
-            inline: "cat /configs/id_bionic.pub >> .ssh/authorized_keys"
-        mysql.vm.provision "shell", 
-            inline: $script_mysql
-        mysql.vm.provision "shell", 
-            inline: "cat /configs/mysqld.cnf > /etc/mysql/mysql.conf.d/mysqld.cnf"
-        mysql.vm.provision "shell", 
-            inline: "service mysql restart"
-
-        mysql.vm.synced_folder "./configs", "/configs"
-        mysql.vm.synced_folder ".", "/vagrant", disabled: true
-    end
-
     config.vm.define "phpweb" do |phpweb|
         phpweb.vm.network "forwarded_port", guest: 8888, host: 8888
         phpweb.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.153"
@@ -51,13 +35,18 @@ Vagrant.configure("2") do |config|
             inline: "cat /vagrant/configs/id_bionic.pub >> .ssh/authorized_keys"
     end
 
+    # optional - provision a vm for ansible playbook scripting
     config.vm.define "ansible" do |ansible|
         ansible.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.155"
         ansible.vm.provision "shell",
             inline: $install_ansible
         ansible.vm.provision "shell",
-            inline: "cp /vagrant/id_bionic >> /home/vagrant && \
-            chmod 600 /home/vagrant/id_bionic"
+            inline: "cp /vagrant/id_bionic /home/vagrant/id_bionic && \
+            chmod 600 /home/vagrant/id_bionic && \
+            chown vagrant:vagrant /home/vagrant/id_bionic"
+        ansible.vm.provision "shell",
+            inline: "ansible-playbook -i /vagrant/configs/ansible/hosts \
+            /vagrant/configs/ansible/playbook.yml"
     end
 
 end
