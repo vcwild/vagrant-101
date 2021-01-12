@@ -1,9 +1,3 @@
-$script_mysql = <<-SCRIPT
-    apt-get update && \
-    apt-get install -y mysql-server-5.7 && \
-    mysql -e "CREATE USER 'phpuser'@'%' IDENTIFIED BY 'pass';"
-SCRIPT
-
 $install_ansible = <<-SCRIPT
     apt-get update && \
     apt-get install -y software-properties-common && \
@@ -15,11 +9,23 @@ SCRIPT
 
 Vagrant.configure("2") do |config|
     config.vm.box = "ubuntu/bionic64"
+    
+    config.vm.provider "virtualbox" do |vb|
+        vb.name = "ubuntu_bionic_config"
+        vb.memory = 512
+        vb.cpus = 1
+    end
 
     config.vm.define "phpweb" do |phpweb|
         phpweb.vm.network "forwarded_port", guest: 8888, host: 8888
         phpweb.vm.network "public_network", bridge: "enp0s25", ip: "192.168.15.153"
         
+        phpweb.vm.provider "virtualbox" do |vb|
+            vb.name = "ubuntu_bionic_php"
+            vb.memory = 1024
+            vb.cpus = 2
+        end
+
         phpweb.vm.provision "shell", 
             inline: "apt-get update && apt-get install -y puppet"
 
@@ -47,6 +53,16 @@ Vagrant.configure("2") do |config|
         ansible.vm.provision "shell",
             inline: "ansible-playbook -i /vagrant/configs/ansible/hosts \
             /vagrant/configs/ansible/playbook.yml"
+    end
+
+    config.vm.define "memcache" do |memcache|
+        memcache.vm.box = "centos/7"
+
+        memcache.vm.provider "virtualbox" do |vb|
+            vb.name = "centos7_memcache"
+            vb.memory = 512
+            vb.cpus = 1
+        end
     end
 
 end
